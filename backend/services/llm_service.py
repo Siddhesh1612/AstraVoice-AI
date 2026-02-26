@@ -1,46 +1,79 @@
 import os
+import requests
 from dotenv import load_dotenv
-from google import genai
 
 load_dotenv()
 
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+
+MODEL = "meta-llama/llama-3.1-8b-instruct"
+
 
 def generate_llm_response(message, intent, sentiment, escalation_score, fraud_score):
 
-    prompt = f"""
-You are AstraVoice — an advanced multilingual AI voice assistant 
-for Indian enterprise customers.
+    system_prompt = f"""
+You are AstraVoice, a professional enterprise AI assistant.
 
-Personality:
-- Professional
-- Calm
-- Emotionally intelligent
-- Natural human tone
-- Not robotic
+CRITICAL LANGUAGE RULES:
+- Respond in ONLY ONE language.
+- Use EXACTLY the same language as the user's message.
+- Do NOT translate.
+- Do NOT repeat the answer in another language.
+- Do NOT provide bilingual output.
+- Do NOT mix languages.
 
-Context:
+RESPONSE STYLE:
+- Keep it short.
+- Make it natural and conversational.
+- No extra explanations.
+
+Business Context:
 Intent: {intent}
 Sentiment: {sentiment}
 Escalation Score: {escalation_score}
 Fraud Score: {fraud_score}
 
-User Message:
-{message}
-
-Rules:
-1. Detect user language automatically.
-2. Respond in the SAME language.
-3. If escalation_score > 70 → apologize and say you are transferring to a human agent.
-4. If fraud_score > 40 → warn politely about security risks and OTP sharing.
-5. Keep response short, conversational, and voice-friendly.
+Operational Rules:
+- If escalation_score > 70 → politely transfer to human agent.
+- If fraud_score > 40 → warn about possible security risk.
 """
 
-    text_response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt
-    )
+    payload = {
+        "model": MODEL,
+        "messages": [
+            {"role": "system", "content": system_prompt.strip()},
+            {"role": "user", "content": message}
+        ],
+        "temperature": 0.6,
+        "max_tokens": 300,
+        "top_p": 0.9
+    }
 
-    response_text = text_response.text.strip()
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "http://localhost:8000",
+        "X-Title": "AstraVoice"
+    }
 
-    return response_text, None
+    try:
+        response = requests.post(
+            OPENROUTER_URL,
+            json=payload,
+            headers=headers,
+            timeout=20
+        )
+
+        data = response.json()
+
+        if "choices" in data:
+            reply = data["choices"][0]["message"]["content"].strip()
+            return reply, None
+        else:
+            print("OpenRouter Error:", data)
+            return "System temporarily unavailable.", None
+
+    except Exception as e:
+        print("LLM Error:", e)
+        return "System temporarily unavailable.", None

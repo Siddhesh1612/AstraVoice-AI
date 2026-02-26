@@ -14,38 +14,69 @@ function App() {
     }
 
     const recognition = new window.webkitSpeechRecognition();
-    recognition.lang = "en-IN"; // can change dynamically later
+    recognition.lang = "en-IN"; 
     recognition.interimResults = false;
 
     recognition.onresult = (event) => {
       const transcript = event.results[0][0].transcript;
-      setMessage(transcript); // THIS writes what you speak
+      setMessage(transcript);
     };
 
     recognition.start();
   };
 
-  // 🔊 Speak AI Response
+  // 🔊 Speak AI Response (STRICT Indian Accent Control)
   const speak = (text) => {
     const synth = window.speechSynthesis;
     if (!synth) return;
 
     const utterance = new SpeechSynthesisUtterance(text);
 
-    const voices = synth.getVoices();
-    const hindiVoice = voices.find(v => v.lang.includes("hi"));
-    const englishVoice = voices.find(v => v.lang.includes("en"));
+    const loadVoicesAndSpeak = () => {
+      const voices = synth.getVoices();
 
-    const hindiRegex = /[\u0900-\u097F]/;
+      if (!voices || voices.length === 0) {
+        console.warn("No voices available.");
+        return;
+      }
 
-    if (hindiRegex.test(text) && hindiVoice) {
-      utterance.voice = hindiVoice;
-    } else if (englishVoice) {
-      utterance.voice = englishVoice;
+      // STRICTLY pick Indian voices only
+      const indianEnglishVoice = voices.find(
+        (v) => v.lang === "en-IN"
+      );
+
+      const hindiVoice = voices.find(
+        (v) => v.lang === "hi-IN"
+      );
+
+      const isHindi = /[\u0900-\u097F]/.test(text);
+
+      if (isHindi && hindiVoice) {
+        utterance.voice = hindiVoice;
+        utterance.lang = "hi-IN";
+        console.log("Using Hindi voice:", hindiVoice.name);
+      } else if (indianEnglishVoice) {
+        utterance.voice = indianEnglishVoice;
+        utterance.lang = "en-IN";
+        console.log("Using Indian English voice:", indianEnglishVoice.name);
+      } else {
+        console.warn("Indian voice not found. Using default.");
+      }
+
+      utterance.rate = 1;
+      utterance.pitch = 1;
+      utterance.volume = 1;
+
+      synth.cancel();
+      synth.speak(utterance);
+    };
+
+    // Handle async voice loading properly
+    if (synth.getVoices().length === 0) {
+      synth.onvoiceschanged = loadVoicesAndSpeak;
+    } else {
+      loadVoicesAndSpeak();
     }
-
-    synth.cancel();
-    synth.speak(utterance);
   };
 
   const sendMessage = async () => {
@@ -67,6 +98,7 @@ function App() {
       });
 
       const data = await res.json();
+
       setResponse(data.response);
       speak(data.response);
 
