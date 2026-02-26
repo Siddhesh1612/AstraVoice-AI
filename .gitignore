@@ -1,5 +1,12 @@
-venv/
+# Python
 __pycache__/
-node_modules/
+*.pyc
+*.pyo
 .env
-database.db
+backend/.env
+backend/Database.db
+
+# Node
+node_modules/
+frontend/dist/
+.DS_Store

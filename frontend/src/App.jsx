@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import "./App.css";
 
+const API = import.meta.env.VITE_API_URL;
+
 // ── Universe particle canvas ────────────────────────────────────────────────
 function ParticleCanvas() {
   const canvasRef = useRef(null);
@@ -184,14 +186,14 @@ export default function App() {
   }, [messages, loading]);
 
   useEffect(() => {
-    fetch("http://localhost:8000/history")
+    fetch(`${API}/history`)
       .then(r => r.json())
       .then(d => setHistory(d.history || []))
       .catch(() => {});
   }, []);
 
   const refreshHistory = () =>
-    fetch("http://localhost:8000/history")
+    fetch(`${API}/history`)
       .then(r => r.json())
       .then(d => setHistory(d.history || []))
       .catch(() => {});
@@ -204,7 +206,7 @@ export default function App() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:8000/chat", {
+      const res = await fetch(`${API}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text.trim(), failed_attempts: 0 }),
@@ -263,7 +265,7 @@ export default function App() {
   };
 
   const clearChats = async () => {
-    await fetch("http://localhost:8000/history", { method: "DELETE" });
+    await fetch(`${API}/history`, { method: "DELETE" });
     setMessages([]);
     setHistory([]);
     setMeta({ sentiment: "-", escalation_score: "-", fraud_score: "-", language: "-" });
@@ -273,7 +275,7 @@ export default function App() {
   // ── Delete single chat ────────────────────────────────────────────────────
   const deleteChat = async (e, id) => {
     e.stopPropagation();
-    await fetch(`http://localhost:8000/history/${id}`, { method: "DELETE" });
+    await fetch(`${API}/history/${id}`, { method: "DELETE" });
     setHistory(prev => prev.filter(h => h.id !== id));
   };
 
