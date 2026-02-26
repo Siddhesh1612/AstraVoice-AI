@@ -26,7 +26,7 @@ def chat(request: ChatRequest):
         request.failed_attempts
     )
 
-    response_text = generate_llm_response(
+    response_text, _ = generate_llm_response(
         request.message,
         intent,
         sentiment_label,
@@ -34,11 +34,12 @@ def chat(request: ChatRequest):
         fraud_score
     )
 
-    return{
+    return {
         "intent": intent,
         "sentiment": sentiment_label,
         "sentiment_score": sentiment_score,
         "fraud_score": fraud_score,
         "escalation_score": escalation_score,
-        "response": response_text
+        "response": response_text,
+        "audio": None
     }
