@@ -7,7 +7,7 @@ load_dotenv()
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-MODEL = "meta-llama/llama-3.1-8b-instruct"
+MODEL = "google/gemini-2.5-flash"
 
 
 def generate_llm_response(message, intent, sentiment, escalation_score, fraud_score):
